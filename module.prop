@@ -1,6 +1,6 @@
 id=os4_apps_runtime_backport
 name=偷渡到 OS4 APP 所需的库和运行时
-version=v0.3.0
-versionCode=300
+version=v0.2.9
+versionCode=209
 author=sisJer0142
-description=偷渡到 HyperOS 4 APP 所需的运行时：向系统桌面 APK 内注入 libmisqlite3.so / librust_maml_sdk.so / libhyper_os_flutter.so（不改 Manifest，安全），并可选版本伪装。
+description=偷渡到 HyperOS 4 APP 所需的运行时：整合 OS4 核心运行时库，可选版本伪装为 HyperOS 4。
