@@ -458,7 +458,7 @@ RUST_SYMBOL_SELFCHECK() {
 # ============================================================
 
 ui_print " "
-ui_print "HyperOS Rust Runtime v3~v5 + Vulkan 1.3"
+ui_print "HyperOS Rust Runtime v3~v5"
 ui_print " "
 
 ABI="$(getprop ro.product.cpu.abi)"
@@ -483,7 +483,6 @@ ui_print "Setting permissions and SELinux labels..."
 set_perm_recursive "$MODPATH/system" 0 0 0755 0644
 set_perm_recursive "$MODPATH/system/system_ext" 0 0 0755 0644
 set_perm_recursive "$MODPATH/system/product" 0 0 0755 0644
-set_perm_recursive "$MODPATH/system/vendor" 0 0 0755 0644
 set_perm_recursive "$MODPATH/system/system_ext/lib64" 0 0 0755 0644 u:object_r:system_lib_file:s0
 set_perm_recursive "$MODPATH/system/lib64" 0 0 0755 0644 u:object_r:system_lib_file:s0
 
@@ -498,11 +497,6 @@ fi
 if [ -f "$MODPATH/system/product/etc/permissions/hyperos_extra_sharedlibs_stubs.xml" ]; then
   set_perm "$MODPATH/system/product/etc/permissions/hyperos_extra_sharedlibs_stubs.xml" 0 0 0644
 fi
-for _vk_xml in android.hardware.vulkan.version-1_1.xml android.hardware.vulkan.version-1_3.xml; do
-  if [ -f "$MODPATH/system/vendor/etc/permissions/$_vk_xml" ]; then
-    set_perm "$MODPATH/system/vendor/etc/permissions/$_vk_xml" 0 0 0644
-  fi
-done
 
 if [ -f "$MODPATH/system.prop" ]; then
   set_perm "$MODPATH/system.prop" 0 0 0644
@@ -523,7 +517,6 @@ CHECK_FILES="
   system/system_ext/framework/hyperos.rustruntime.jar
   system/product/etc/permissions/hyperos.rustruntime_v3_v4_v5.xml
   system/product/etc/permissions/hyperos_extra_sharedlibs_stubs.xml
-  system/vendor/etc/permissions/android.hardware.vulkan.version-1_3.xml
   system.prop
 "
 
