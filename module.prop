@@ -1,6 +1,6 @@
-id=
-name=偷渡OS4 APP所需的库
-version=v0.1
-versionCode=1
+id=os4_apps_runtime_backport
+name=偷渡到 OS4 APP 所需的库和运行时
+version=v0.2.7
+versionCode=270
 author=sisJer0142
-description=为 Android 16 的 HyperOS 3 补齐 Rust 运行时及一系列用 Rust + Flutter 重构的系统软件所需的库。
+description=为 Android 16 的 HyperOS 3 补齐 Rust Runtime + Vulkan 1.3 + 使用 Rust 和 Flutter 重写的 APP 所需的库。
