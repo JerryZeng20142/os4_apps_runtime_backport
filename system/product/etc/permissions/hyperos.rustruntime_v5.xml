@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Adds only v5; HyperOS 3 keeps its existing v3 declaration. -->
-<permissions>
-   <library name="hyperos.rustruntime.v5"
-            file="/system_ext/framework/hyperos.rustruntime.jar" />
-</permissions>

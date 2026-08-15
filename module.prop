@@ -1,6 +1,6 @@
 id=os4_apps_runtime_backport
 name=偷渡到 OS4 APP 所需的库和运行时
-version=v0.2.8
-versionCode=280
+version=v0.3.0
+versionCode=300
 author=sisJer0142
-description=为 Android 16 的 HyperOS 3 补齐 Rust Runtime + 使用 Rust 和 Flutter 重写的 APP 所需的库。
+description=偷渡到 HyperOS 4 APP 所需的运行时：向系统桌面 APK 内注入 libmisqlite3.so / librust_maml_sdk.so / libhyper_os_flutter.so（不改 Manifest，安全），并可选版本伪装。
