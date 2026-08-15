@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shared-library stub declarations for HyperOS 4 system apps (e.g. MiuiHome).
+  These files exist so that PackageManager will pass the <uses-library required="true">
+  check for apps that declare them in AndroidManifest.
+  Libraries pointing to the same jar file already available:
+    hyperos.rustruntime  (general fallback name, some apps use this)
+  Stubs below are intentionally very small: they either point to an existing
+  jar in system_ext/framework (reusing rustruntime.jar as a safe stub) or to
+  an actual hyper_os_* dylib where applicable.
+  The purpose is NOT to implement the real API, only to make the package
+  installer think the shared library exists so that app can be started.
+-->
+
+<permissions>
+
+    <!-- Fallback generic name used by some old OS4 betas -->
+    <library name="hyperos.rustruntime"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <!-- ========== 以下 stub 均指向 hyperos.rustruntime.jar 充当通用桩 ==========
+         真实实现由 /system_ext/lib64/*.so 中的 Rust 动态库提供，
+         这里只是为了通过 PackageManager 的 uses-library 校验。
+         若某个 stub 真实存在对应的 .jar 请手动替换为正确路径。 -->
+
+    <library name="hyperos.app_services"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.core"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.multimodal"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.hmscore.interface"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.dfx"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.dfp"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.power"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.media"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.telephony"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.location"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.bluetooth"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.security"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.speech"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.ui"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="hyperos.sensor"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="miui.multimodal.sdk"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="com.miui.dfss"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="com.xiaomi.misight"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+    <library name="com.xiaomi.aiasst.service"
+             file="/system_ext/framework/hyperos.rustruntime.jar" />
+
+</permissions>

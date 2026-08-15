@@ -1,0 +1,6 @@
+id=
+name=偷渡OS4 APP所需的库
+version=v0.1
+versionCode=1
+author=sisJer0142
+description=为 Android 16 的 HyperOS 3 补齐 Rust 运行时及一系列用 Rust + Flutter 重构的系统软件所需的库。

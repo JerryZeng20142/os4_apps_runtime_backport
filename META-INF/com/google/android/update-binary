@@ -1,0 +1,203 @@
+#!/system/bin/sh
+
+#################
+# Initialization
+#################
+
+umask 022
+
+# Global vars
+TMPDIR=/dev/tmp
+
+# PERSISTDIR: compatible with both Magisk and KernelSU/APatch
+if [ -d /sbin/.magisk/mirror/persist ]; then
+  PERSISTDIR=/sbin/.magisk/mirror/persist
+elif [ -d /data/adb/ksud/mirror/persist ]; then
+  PERSISTDIR=/data/adb/ksud/mirror/persist
+elif [ -d /mnt/vendor/persist ]; then
+  PERSISTDIR=/mnt/vendor/persist
+else
+  PERSISTDIR=/persist
+fi
+
+rm -rf $TMPDIR 2>/dev/null
+mkdir -p $TMPDIR
+
+# echo before loading util_functions
+ui_print() { echo "$1"; }
+
+require_root_solution() {
+  ui_print "*******************************"
+  ui_print " Please install Magisk v19.0+ / "
+  ui_print " KernelSU v0.5+ / APatch latest "
+  ui_print "*******************************"
+  exit 1
+}
+
+is_legacy_script() {
+  unzip -l "$ZIPFILE" install.sh | grep -q install.sh
+  return $?
+}
+
+print_modname() {
+  local len
+  len=`echo -n $MODNAME | wc -c`
+  len=$((len + 2))
+  local pounds=`printf "%${len}s" | tr ' ' '*'`
+  ui_print "$pounds"
+  ui_print " $MODNAME "
+  ui_print "$pounds"
+  ui_print "******************************"
+  ui_print " Magisk / KernelSU / APatch "
+  ui_print "******************************"
+}
+
+##############
+# Environment
+##############
+
+OUTFD=$2
+ZIPFILE=$3
+
+mount /data 2>/dev/null
+
+# ------------------------------------------------------------
+# Load utility functions (三平台兼容探测)
+# ------------------------------------------------------------
+UTIL_FUNCTIONS=""
+ROOT_TYPE=""
+if [ -f /data/adb/magisk/util_functions.sh ]; then
+  UTIL_FUNCTIONS=/data/adb/magisk/util_functions.sh
+  ROOT_TYPE="magisk"
+elif [ -f /data/adb/ksu/util_functions.sh ]; then
+  UTIL_FUNCTIONS=/data/adb/ksu/util_functions.sh
+  ROOT_TYPE="kernelsu"
+elif [ -f /data/adb/ap/util_functions.sh ]; then
+  UTIL_FUNCTIONS=/data/adb/ap/util_functions.sh
+  ROOT_TYPE="apatch"
+fi
+
+[ -n "$UTIL_FUNCTIONS" ] || require_root_solution
+. "$UTIL_FUNCTIONS"
+
+# Magisk 才有版本码校验；KernelSU/APatch 没 MAGISK_VER_CODE 变量，跳过
+if [ "$ROOT_TYPE" = "magisk" ]; then
+  [ $MAGISK_VER_CODE -gt 18100 ] || require_root_solution
+fi
+
+# Preperation for flashable zips
+setup_flashable
+
+# Mount partitions
+mount_partitions
+
+# Detect version and architecture
+api_level_arch_detect
+
+# Setup busybox and binaries
+$BOOTMODE && boot_actions || recovery_actions
+
+##############
+# Preparation
+##############
+
+# Extract prop file
+unzip -o "$ZIPFILE" module.prop -d $TMPDIR >&2
+[ ! -f $TMPDIR/module.prop ] && abort "! Unable to extract zip file!"
+
+$BOOTMODE && MODDIRNAME=modules_update || MODDIRNAME=modules
+MODULEROOT=$NVBASE/$MODDIRNAME
+MODID=`grep_prop id $TMPDIR/module.prop`
+MODPATH=$MODULEROOT/$MODID
+MODNAME=`grep_prop name $TMPDIR/module.prop`
+
+# Create mod paths
+rm -rf $MODPATH 2>/dev/null
+mkdir -p $MODPATH
+
+##########
+# Install
+##########
+
+if is_legacy_script; then
+  unzip -oj "$ZIPFILE" module.prop install.sh uninstall.sh 'common/*' -d $TMPDIR >&2
+
+  # Load install script
+  . $TMPDIR/install.sh
+
+  # Callbacks
+  print_modname
+  on_install
+
+  # Custom uninstaller
+  [ -f $TMPDIR/uninstall.sh ] && cp -af $TMPDIR/uninstall.sh $MODPATH/uninstall.sh
+
+  # Skip mount
+  $SKIPMOUNT && touch $MODPATH/skip_mount
+
+  # prop file
+  $PROPFILE && cp -af $TMPDIR/system.prop $MODPATH/system.prop
+
+  # Module info
+  cp -af $TMPDIR/module.prop $MODPATH/module.prop
+
+  # post-fs-data scripts
+  $POSTFSDATA && cp -af $TMPDIR/post-fs-data.sh $MODPATH/post-fs-data.sh
+
+  # service scripts
+  $LATESTARTSERVICE && cp -af $TMPDIR/service.sh $MODPATH/service.sh
+
+  ui_print "- Setting permissions"
+  set_permissions
+else
+  print_modname
+
+  unzip -o "$ZIPFILE" customize.sh -d $MODPATH >&2
+
+  if ! grep -q '^SKIPUNZIP=1$' $MODPATH/customize.sh 2>/dev/null; then
+    ui_print "- Extracting module files"
+    unzip -o "$ZIPFILE" -x 'META-INF/*' -d $MODPATH >&2
+
+    # Default permissions
+    set_perm_recursive $MODPATH 0 0 0755 0644
+  fi
+
+  # Load customization script
+  [ -f $MODPATH/customize.sh ] && . $MODPATH/customize.sh
+fi
+
+# Handle replace folders
+for TARGET in $REPLACE; do
+  ui_print "- Replace target: $TARGET"
+  mktouch $MODPATH$TARGET/.replace
+done
+
+if $BOOTMODE; then
+  # Update info for Magisk / KernelSU Manager UI
+  mktouch $NVBASE/modules/$MODID/update 2>/dev/null
+  cp -af $MODPATH/module.prop $NVBASE/modules/$MODID/module.prop 2>/dev/null
+fi
+
+# Copy over custom sepolicy rules
+if [ -f $MODPATH/sepolicy.rule -a -e $PERSISTDIR ]; then
+  ui_print "- Installing custom sepolicy patch"
+  PERSISTMOD=$PERSISTDIR/magisk/$MODID
+  mkdir -p $PERSISTMOD 2>/dev/null
+  cp -af $MODPATH/sepolicy.rule $PERSISTMOD/sepolicy.rule 2>/dev/null
+fi
+
+# Remove stuffs that don't belong to modules
+rm -rf \
+$MODPATH/system/placeholder $MODPATH/customize.sh \
+$MODPATH/README.md $MODPATH/.git* 2>/dev/null
+
+##############
+# Finalizing
+##############
+
+cd /
+$BOOTMODE || recovery_cleanup
+rm -rf $TMPDIR
+
+ui_print "- Done"
+exit 0

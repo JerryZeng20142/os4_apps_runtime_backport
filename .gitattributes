@@ -1,0 +1,19 @@
+# ========= Shell/init scripts: MUST be LF-only, else Android shell breaks =========
+*.sh                text eol=lf
+*.rc                text eol=lf
+*.prop              text eol=lf
+update-binary       text eol=lf
+updater-script      text eol=lf
+filelist.txt        text eol=lf
+
+# ========= XML: LF preferred (Google/Android standard) =========
+*.xml               text eol=lf
+
+# ========= Binary libraries/jar/APK: never touch line endings =========
+*.so                binary
+*.jar               binary
+*.dylib             binary
+*.bin               binary
+
+# ========= Build output (already in .gitignore) - force binary if ever added =========
+*.zip               binary

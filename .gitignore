@@ -1,0 +1,22 @@
+# ========= Build output (zip modules, regenerated locally) =========
+*.zip
+
+# ========= Temporary backup files (only used during build/merge) =========
+_libhyper_os_flutter_telegram_backup.so
+_libhyper_os_flutter*.so
+
+# ========= Git metadata / OS junk =========
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ========= Editor / IDE =========
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========= Windows Explorer image cache =========
+*.db
