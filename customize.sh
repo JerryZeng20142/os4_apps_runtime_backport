@@ -198,12 +198,12 @@ RUST_SYMBOL_SELFCHECK() {
   local MISSING_LIST=""
   local TOTAL_SO=0
   local _f
-  for _f in "$MODPATH"/system/system_ext/lib64/libhyper_os_*.so; do
+  for _f in "$MODPATH"/system_ext/lib64/libhyper_os_*.so; do
     [ -e "$_f" ] && TOTAL_SO=$((TOTAL_SO + 1))
   done
 
   for SYM in $MUST_SYMBOLS; do
-    if grep -Rqa "$SYM" "$MODPATH/system/system_ext/lib64/" 2>/dev/null; then
+    if grep -Rqa "$SYM" "$MODPATH/system_ext/lib64/" 2>/dev/null; then
       ui_print "  [OK]  $SYM  (found)"
     else
       ui_print "  [WARN] $SYM  (MISSING in all libhyper_os_*.so)"
@@ -253,31 +253,13 @@ RUST_SYMBOL_SELFCHECK
 ui_print " "
 ui_print "Setting permissions and SELinux labels..."
 
+# ---------- 动态分区权限（按 Magisk 标准目录结构：system / system_ext / product 平级）----------
+# 各分区目录直接放在 $MODPATH 根下，安装时会被分别挂载到对应系统分区。
+# 所有授权均按目录/文件存在性自动处理，不依赖硬编码路径列表。
+
+# --- system 分区（system/lib64 等） ---
 if [ -d "$MODPATH/system" ]; then
   set_perm_recursive "$MODPATH/system" 0 0 0755 0644
-  if [ -d "$MODPATH/system/system_ext" ]; then
-    set_perm_recursive "$MODPATH/system/system_ext" 0 0 0755 0644
-    if [ -d "$MODPATH/system/system_ext/lib64" ]; then
-      set_perm_recursive "$MODPATH/system/system_ext/lib64" 0 0 0755 0644 u:object_r:system_lib_file:s0
-    fi
-    if [ -f "$MODPATH/system/system_ext/bin/hyos_spawner" ]; then
-      set_perm "$MODPATH/system/system_ext/bin/hyos_spawner" 0 2000 0755 u:object_r:zygote_exec:s0
-    fi
-    if [ -f "$MODPATH/system/system_ext/etc/init/init.hyos_spawner.rc" ]; then
-      set_perm "$MODPATH/system/system_ext/etc/init/init.hyos_spawner.rc" 0 0 0644
-    fi
-    if [ -f "$MODPATH/system/system_ext/framework/hyperos.rustruntime.jar" ]; then
-      set_perm "$MODPATH/system/system_ext/framework/hyperos.rustruntime.jar" 0 0 0644
-    fi
-  fi
-  if [ -d "$MODPATH/system/product" ]; then
-    set_perm_recursive "$MODPATH/system/product" 0 0 0755 0644
-    for _p in hyperos.rustruntime_v3_v4_v5.xml hyperos.rustruntime_v5.xml hyperos_extra_sharedlibs_stubs.xml; do
-      if [ -f "$MODPATH/system/product/etc/permissions/$_p" ]; then
-        set_perm "$MODPATH/system/product/etc/permissions/$_p" 0 0 0644
-      fi
-    done
-  fi
   if [ -d "$MODPATH/system/lib64" ]; then
     set_perm_recursive "$MODPATH/system/lib64" 0 0 0755 0644 u:object_r:system_lib_file:s0
   fi
@@ -286,11 +268,38 @@ if [ -d "$MODPATH/system" ]; then
   fi
 fi
 
+# --- system_ext 分区（独立平级目录，包含 hyos_spawner、hyperos.rustruntime.jar、70+ libhyper_os_*.so） ---
+if [ -d "$MODPATH/system_ext" ]; then
+  set_perm_recursive "$MODPATH/system_ext" 0 0 0755 0644
+  if [ -d "$MODPATH/system_ext/lib64" ]; then
+    set_perm_recursive "$MODPATH/system_ext/lib64" 0 0 0755 0644 u:object_r:system_lib_file:s0
+  fi
+  if [ -f "$MODPATH/system_ext/bin/hyos_spawner" ]; then
+    set_perm "$MODPATH/system_ext/bin/hyos_spawner" 0 2000 0755 u:object_r:zygote_exec:s0
+  fi
+  if [ -f "$MODPATH/system_ext/etc/init/init.hyos_spawner.rc" ]; then
+    set_perm "$MODPATH/system_ext/etc/init/init.hyos_spawner.rc" 0 0 0644
+  fi
+  if [ -f "$MODPATH/system_ext/framework/hyperos.rustruntime.jar" ]; then
+    set_perm "$MODPATH/system_ext/framework/hyperos.rustruntime.jar" 0 0 0644
+  fi
+fi
+
+# --- product 分区（独立平级目录，包含 permissions XML） ---
+if [ -d "$MODPATH/product" ]; then
+  set_perm_recursive "$MODPATH/product" 0 0 0755 0644
+  for _p in hyperos.rustruntime_v3_v4_v5.xml hyperos.rustruntime_v5.xml hyperos_extra_sharedlibs_stubs.xml; do
+    if [ -f "$MODPATH/product/etc/permissions/$_p" ]; then
+      set_perm "$MODPATH/product/etc/permissions/$_p" 0 0 0644
+    fi
+  done
+fi
+
 if [ -f "$MODPATH/system.prop" ]; then
   set_perm "$MODPATH/system.prop" 0 0 0644
 fi
 
-# ---------- 完整性校验（动态：存在的目录/文件才检查；不再对 system/ 下固定路径硬编码）----------
+# ---------- 完整性校验（动态：存在的目录/文件才检查；按分区分别扫描）----------
 ui_print " "
 ui_print "Running dynamic integrity check..."
 CHECK_OK=true
@@ -303,24 +312,32 @@ for F in customize.sh module.prop service.sh post-fs-data.sh \
   fi
   ui_print "  WARN: skeleton $F not found under MODPATH root"
 done
-# 如果用户之后重新把 system/ 放回模块，只做抽样 / 非 abort 提示：
-if [ -d "$MODPATH/system" ]; then
-  TOTAL=0
-  MISS=0
-  while IFS= read -r F; do
-    TOTAL=$((TOTAL + 1))
-    if [ ! -f "$F" ]; then
-      MISS=$((MISS + 1))
-    fi
-  done <<EOF
-$(find "$MODPATH/system" -type f 2>/dev/null)
+# 按分区扫描文件树：system / system_ext / product（每个存在的分区独立做完整性统计）
+check_dir_tree() {
+  local DIR="$1"
+  local LABEL="$2"
+  if [ -d "$DIR" ]; then
+    local TOTAL=0
+    local MISS=0
+    local F
+    while IFS= read -r F; do
+      TOTAL=$((TOTAL + 1))
+      if [ ! -f "$F" ]; then
+        MISS=$((MISS + 1))
+      fi
+    done <<EOF
+$(find "$DIR" -type f 2>/dev/null)
 EOF
-  if [ "$MISS" -gt 0 ]; then
-    ui_print "  WARN: $MISS / $TOTAL files listed under MODPATH/system missing."
-  else
-    ui_print "  OK: system/ tree intact ($TOTAL files)."
+    if [ "$MISS" -gt 0 ]; then
+      ui_print "  WARN: $MISS / $TOTAL files listed under $LABEL missing."
+    else
+      ui_print "  OK: $LABEL intact ($TOTAL files)."
+    fi
   fi
-fi
+}
+check_dir_tree "$MODPATH/system"     "system/"
+check_dir_tree "$MODPATH/system_ext" "system_ext/"
+check_dir_tree "$MODPATH/product"    "product/"
 # system.prop 允许空文件（零属性），不算 missing。
 ui_print "  Integrity check summary: OK (skeleton valid)."
 CHECK_OK=true
