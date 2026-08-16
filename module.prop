@@ -1,6 +1,6 @@
 id=os4_apps_runtime_backport
 name=偷渡到 OS4 APP 所需的库和运行时
-version=v0.2.9
+version=v0.2.9-fix
 versionCode=209
 author=sisJer0142
-description=偷渡到 HyperOS 4 APP 所需的运行时：整合 OS4 核心运行时库，可选版本伪装为 HyperOS 4。
+description=整合偷渡到 HyperOS 4 APP 所需的运行时和库。
