@@ -253,11 +253,6 @@ RUST_SYMBOL_SELFCHECK
 ui_print " "
 ui_print "Setting permissions and SELinux labels..."
 
-# ---------- 动态 system/ 权限 ----------
-# 注意：v0.2.9 开始整个 system/ 内容（来自 hyperos-v5-runtime-v1.1 + Vulkan etc）
-# 已全部按你的要求移除，因此默认不存在 system/ 树。
-# 如果之后用户再次手动把 .so / permissions XML 加回 system/，
-# 这里按对应目录 / 文件存在性自动授权（不依赖固定路径列表，不会因为缺路径 abort）。
 if [ -d "$MODPATH/system" ]; then
   set_perm_recursive "$MODPATH/system" 0 0 0755 0644
   if [ -d "$MODPATH/system/system_ext" ]; then
